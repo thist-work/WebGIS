@@ -53,9 +53,6 @@ export default function Login() {
         <div className="switch-link">
           還沒有帳號？<Link to="/register">註冊新帳號</Link>
         </div>
-        <div className="switch-link" style={{ marginTop: 6, opacity: 0.7 }}>
-          管理員預設帳號：thist ／ 密碼：thist000000
-        </div>
       </div>
     </div>
   );
