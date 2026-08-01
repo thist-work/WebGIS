@@ -425,7 +425,7 @@ export default function MapPage() {
         </div>
 
         <div className="sidebar-footer">
-          <button className="btn-ghost" style={{ flex: 1 }} onClick={() => setShowChangePw(true)}>
+          <button className="btn-danger" style={{ flex: 1 }} onClick={() => setShowChangePw(true)}>
             密碼變更
           </button>
           <button className="btn-danger" style={{ flex: 1 }} onClick={logout}>
