@@ -66,18 +66,6 @@ function FlyTo({ target }) {
   return null;
 }
 
-function LocateMe() {
-  const map = useMap();
-  const go = () => {
-    map.locate({ setView: true, maxZoom: 15 });
-  };
-  return (
-    <button className="btn-ghost" onClick={go} title="定位到目前位置">
-      📍 定位
-    </button>
-  );
-}
-
 export default function MapPage() {
   const { user, logout } = useAuth();
   const [points, setPoints] = useState([]);
@@ -93,7 +81,12 @@ export default function MapPage() {
   const [flyTarget, setFlyTarget] = useState(null);
   const [toast, setToast] = useState("");
   const [showChangePw, setShowChangePw] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const mapRef = useRef(null);
+
+  const locateMe = () => {
+    mapRef.current?.locate({ setView: true, maxZoom: 15 });
+  };
 
   // 量測工具（距離 / 面積）
   const [measureMode, setMeasureMode] = useState(null); // null | 'distance' | 'area'
@@ -272,12 +265,79 @@ export default function MapPage() {
 
   return (
     <div className="app-shell">
-      <aside className="sidebar">
-        <div className="sidebar-header">
-          <h1>Web GIS 地圖系統</h1>
-          <div className="sub">React + Leaflet + Socket.io 即時協作</div>
+      <header className="topbar">
+        <div className="topbar-left">
+          <button
+            className="sidebar-toggle"
+            onClick={() => setSidebarOpen((v) => !v)}
+            title={sidebarOpen ? "收合側欄" : "展開側欄"}
+          >
+            {sidebarOpen ? "◀" : "☰"}
+          </button>
+          <div className="topbar-brand">
+            <h1>Web GIS 地圖系統</h1>
+            <span className="sub">React + Leaflet + Socket.io 即時協作</span>
+          </div>
         </div>
 
+        <div className="topbar-right">
+          <button className="btn-brass" onClick={() => setAddMode((v) => !v)}>
+            {addMode ? "取消新增" : "＋ 新增點位"}
+          </button>
+
+          <select value={basemap} onChange={(e) => setBasemap(e.target.value)}>
+            {Object.entries(BASEMAPS).map(([key, b]) => (
+              <option key={key} value={key}>
+                {b.label}
+              </option>
+            ))}
+          </select>
+
+          <label className="topbar-checkbox">
+            <input
+              type="checkbox"
+              checked={showCadastral}
+              onChange={(e) => setShowCadastral(e.target.checked)}
+            />
+            地籍圖
+          </label>
+
+          <button className="btn-ghost" onClick={() => setShowCadastralPanel((v) => !v)}>
+            🔎 地籍搜尋
+          </button>
+
+          <div className="topbar-divider" />
+
+          <button
+            className={`btn-ghost ${measureMode === "distance" ? "active" : ""}`}
+            onClick={() => toggleMeasure("distance")}
+            title="量測距離"
+          >
+            📏 距離
+          </button>
+          <button
+            className={`btn-ghost ${measureMode === "area" ? "active" : ""}`}
+            onClick={() => toggleMeasure("area")}
+            title="量測面積"
+          >
+            📐 面積
+          </button>
+          {(measureMode || measureResult) && (
+            <button className="btn-ghost" onClick={clearMeasure} title="清除量測">
+              ✕
+            </button>
+          )}
+
+          <div className="topbar-divider" />
+
+          <button className="btn-ghost" onClick={locateMe} title="定位到目前位置">
+            📍 定位
+          </button>
+        </div>
+      </header>
+
+      <div className={`body-shell ${sidebarOpen ? "" : "sidebar-collapsed"}`}>
+      <aside className="sidebar">
         <div className="user-pill">
           <span>{user?.username}</span>
           <span className={`role-tag ${user?.role}`}>
@@ -377,59 +437,6 @@ export default function MapPage() {
       <div className="map-wrap">
         {addMode && <div className="add-mode-banner">請在地圖上點擊以放置新點位</div>}
 
-        <div className="map-toolbar">
-          <div className="toolbar-card">
-            <button className="btn-brass" onClick={() => setAddMode((v) => !v)}>
-              {addMode ? "取消新增" : "＋ 新增點位"}
-            </button>
-          </div>
-          <div className="toolbar-card">
-            <select value={basemap} onChange={(e) => setBasemap(e.target.value)}>
-              {Object.entries(BASEMAPS).map(([key, b]) => (
-                <option key={key} value={key}>
-                  {b.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="toolbar-card">
-            <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
-              <input
-                type="checkbox"
-                checked={showCadastral}
-                onChange={(e) => setShowCadastral(e.target.checked)}
-              />
-              地籍圖
-            </label>
-          </div>
-          <div className="toolbar-card">
-            <button className="btn-ghost" onClick={() => setShowCadastralPanel((v) => !v)}>
-              🔎 地籍搜尋
-            </button>
-          </div>
-          <div className="toolbar-card" style={{ display: "flex", gap: 6 }}>
-            <button
-              className={`btn-ghost ${measureMode === "distance" ? "active" : ""}`}
-              onClick={() => toggleMeasure("distance")}
-              title="量測距離"
-            >
-              📏 距離
-            </button>
-            <button
-              className={`btn-ghost ${measureMode === "area" ? "active" : ""}`}
-              onClick={() => toggleMeasure("area")}
-              title="量測面積"
-            >
-              📐 面積
-            </button>
-            {(measureMode || measureResult) && (
-              <button className="btn-ghost" onClick={clearMeasure} title="清除量測">
-                ✕
-              </button>
-            )}
-          </div>
-        </div>
-
         <MapContainer
           center={[25.033, 121.5654]}
           zoom={13}
@@ -454,11 +461,6 @@ export default function MapPage() {
           <MeasureLayer mode={measureMode} onResult={setMeasureResult} resetSignal={measureReset} />
           <ClickToAdd active={addMode} onPick={handlePick} />
           <FlyTo target={flyTarget} />
-          <div className="map-toolbar" style={{ top: "auto", bottom: 14, right: 14 }}>
-            <div className="toolbar-card">
-              <LocateMe />
-            </div>
-          </div>
 
           {visiblePoints.map((p) => (
             <Marker key={p.id} position={[p.y, p.x]}>
@@ -508,6 +510,7 @@ export default function MapPage() {
         )}
 
         {toast && <div className="add-mode-banner" style={{ bottom: 20, top: "auto" }}>{toast}</div>}
+      </div>
       </div>
 
       {pendingLatLng && (
