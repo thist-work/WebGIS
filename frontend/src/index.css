@@ -179,9 +179,149 @@ label {
 
 /* --- Map layout --- */
 .app-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* Top header bar — brand + all map action buttons merged in from the right-side toolbar */
+.topbar {
+  height: 62px;
+  min-height: 62px;
+  flex: 0 0 auto;
+  background: var(--ink);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  position: relative;
+  z-index: 900;
+}
+
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.sidebar-toggle {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.18);
+  color: #fff;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.sidebar-toggle:hover {
+  border-color: var(--brass);
+  color: var(--brass);
+}
+
+.topbar-brand h1 {
+  font-size: 16px;
+  color: #fff;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+.topbar-brand .sub {
+  display: block;
+  font-size: 11px;
+  color: #9fb2c1;
+  margin-top: 2px;
+  white-space: nowrap;
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  overflow-x: auto;
+}
+
+.topbar-right select {
+  width: auto;
+  padding: 8px 10px;
+  font-size: 13px;
+  background: rgba(255,255,255,0.06);
+  border-color: rgba(255,255,255,0.2);
+  color: #eef2f4;
+}
+
+.topbar-right .btn-ghost {
+  background: rgba(255,255,255,0.05);
+  border-color: rgba(255,255,255,0.2);
+  color: #dbe6ec;
+  font-size: 13px;
+  padding: 8px 12px;
+  white-space: nowrap;
+}
+.topbar-right .btn-ghost:hover {
+  border-color: var(--brass);
+  color: #fff;
+}
+.topbar-right .btn-ghost.active {
+  background: var(--brass);
+  border-color: var(--brass);
+  color: #fff;
+}
+.topbar-right .btn-brass {
+  white-space: nowrap;
+}
+
+.topbar-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 8px 10px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 8px;
+  color: #dbe6ec;
+  font-size: 13px;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: normal;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.topbar-checkbox input {
+  width: auto;
+}
+
+.topbar-divider {
+  width: 1px;
+  height: 24px;
+  background: rgba(255,255,255,0.15);
+  margin: 0 2px;
+  flex-shrink: 0;
+}
+
+/* Body row: collapsible sidebar + map */
+.body-shell {
+  flex: 1;
+  min-height: 0;
   display: grid;
   grid-template-columns: 340px 1fr;
-  height: 100%;
+  transition: grid-template-columns 0.22s ease;
+}
+.body-shell.sidebar-collapsed {
+  grid-template-columns: 0px 1fr;
+}
+.body-shell.sidebar-collapsed .sidebar {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .sidebar {
@@ -190,20 +330,7 @@ label {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-}
-
-.sidebar-header {
-  padding: 18px 18px 14px;
-  border-bottom: 1px solid rgba(255,255,255,0.1);
-}
-.sidebar-header h1 {
-  font-size: 17px;
-  color: #fff;
-}
-.sidebar-header .sub {
-  font-size: 12px;
-  color: #9fb2c1;
-  margin-top: 3px;
+  transition: opacity 0.15s ease;
 }
 
 .user-pill {
@@ -482,10 +609,25 @@ label {
   font-size: 11.5px;
 }
 
+@media (max-width: 900px) {
+  .topbar {
+    height: auto;
+    flex-wrap: wrap;
+    padding: 10px 14px;
+  }
+  .topbar-right {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
 @media (max-width: 760px) {
-  .app-shell {
+  .body-shell {
     grid-template-columns: 1fr;
     grid-template-rows: auto 1fr;
+  }
+  .body-shell.sidebar-collapsed {
+    grid-template-rows: 0px 1fr;
   }
   .sidebar {
     max-height: 42vh;
