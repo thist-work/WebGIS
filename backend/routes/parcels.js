@@ -4,12 +4,73 @@ const { requireAuth } = require("../middleware/auth");
 
 const router = express.Router();
 
+// 取得所有「段」清單
+// 資料庫的 section 欄位為「OO段OO小段」組合字串，這裡以第一個「段」字切出段名稱
+// GET /api/parcels/sections
+router.get("/sections", requireAuth, async (req, res) => {
+  try {
+    const { rows } = await query(
+      `SELECT DISTINCT substring(section from '^(.*?段)') AS duan
+         FROM parcels
+        WHERE section ~ '段'
+        ORDER BY duan`
+    );
+    res.json({ sections: rows.map((r) => r.duan).filter(Boolean) });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "讀取段別清單失敗" });
+  }
+});
+
+// 取得指定「段」底下的「小段」清單（供第二個下拉選單使用）
+// GET /api/parcels/subsections?duan=OO段
+router.get("/subsections", requireAuth, async (req, res) => {
+  try {
+    const duan = (req.query.duan || "").trim();
+    if (!duan) return res.json({ subsections: [] });
+    const { rows } = await query(
+      `SELECT DISTINCT NULLIF(substring(section from '^.*?段(.*)$'), '') AS xiaoduan
+         FROM parcels
+        WHERE substring(section from '^(.*?段)') = $1
+        ORDER BY xiaoduan NULLS FIRST`,
+      [duan]
+    );
+    res.json({ subsections: rows.map((r) => r.xiaoduan || "") });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "讀取小段清單失敗" });
+  }
+});
+
 // 依「段小段 / 地號 / 縣市 / 鄉鎮」關鍵字模糊搜尋地籍宗地
+// 亦支援結構化搜尋：段(duan) + 小段(xiaoduan) + 地號(lot)
 // GET /api/parcels/search?q=關鍵字&limit=20
+// GET /api/parcels/search?duan=OO段&xiaoduan=OO小段&lot=123
 router.get("/search", requireAuth, async (req, res) => {
   try {
-    const q = (req.query.q || "").trim();
     const limit = Math.min(Number(req.query.limit) || 20, 100);
+    const duan = (req.query.duan || "").trim();
+
+    // 結構化搜尋（下拉選段/小段 + 輸入地號）
+    if (duan) {
+      const xiaoduan = (req.query.xiaoduan || "").trim();
+      const lot = (req.query.lot || "").trim();
+      const section = `${duan}${xiaoduan}`;
+      const { rows } = await query(
+        `SELECT id, county, town, section, lot_no, area_sqm, landuse,
+                ST_X(ST_Centroid(geom)) AS center_x,
+                ST_Y(ST_Centroid(geom)) AS center_y
+           FROM parcels
+          WHERE section = $1 AND ($2 = '' OR lot_no ILIKE $2)
+          ORDER BY lot_no
+          LIMIT $3`,
+        [section, lot ? `%${lot}%` : "", limit]
+      );
+      return res.json({ parcels: rows });
+    }
+
+    // 舊版關鍵字模糊搜尋（維持相容）
+    const q = (req.query.q || "").trim();
     if (!q) return res.json({ parcels: [] });
 
     const { rows } = await query(
