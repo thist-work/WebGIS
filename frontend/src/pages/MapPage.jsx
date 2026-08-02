@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import {
   MapContainer,
   TileLayer,
@@ -82,10 +82,34 @@ export default function MapPage() {
   const [toast, setToast] = useState("");
   const [showChangePw, setShowChangePw] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const mapRef = useRef(null);
+  const [locating, setLocating] = useState(false);
 
+  // 定位到目前使用者位置並 flyTo（改用瀏覽器原生 Geolocation API，
+  // 原本透過 react-leaflet 的 whenCreated 取得地圖實例的方式在 react-leaflet v4
+  // 已失效，導致按鈕點擊沒有反應）
   const locateMe = () => {
-    mapRef.current?.locate({ setView: true, maxZoom: 15 });
+    if (!navigator.geolocation) {
+      showToast("此瀏覽器不支援定位功能");
+      return;
+    }
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        setFlyTarget({ x: longitude, y: latitude, t: Date.now() });
+        showToast("已定位到目前位置");
+        setLocating(false);
+      },
+      (err) => {
+        showToast(
+          err?.code === 1
+            ? "無法取得目前位置，請允許瀏覽器存取您的位置權限"
+            : "定位失敗，請稍後再試"
+        );
+        setLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
   };
 
   // 量測工具（距離 / 面積）
@@ -159,11 +183,13 @@ export default function MapPage() {
   const submitNew = async (form) => {
     setSaving(true);
     try {
-      await api.post("/api/points", form, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      // 注意：送出 FormData 時不要手動指定 Content-Type，
+      // 讓瀏覽器自動帶上 multipart 的 boundary，否則後端 multer 會解析失敗、
+      // 導致新增的資料實際上沒有寫入資料庫（Supabase）
+      const { data } = await api.post("/api/points", form);
+      setPoints((prev) => (prev.some((pt) => pt.id === data.point.id) ? prev : [data.point, ...prev]));
       setPendingLatLng(null);
-      showToast("點位新增成功");
+      showToast("點位新增成功，已寫入資料庫");
     } catch (err) {
       showToast(err?.response?.data?.error || "儲存失敗");
     } finally {
@@ -175,11 +201,11 @@ export default function MapPage() {
   const submitEdit = async (form) => {
     setSaving(true);
     try {
-      await api.put(`/api/points/${editing.id}`, form, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      // 同上，讓瀏覽器自動帶上 multipart 的 boundary
+      const { data } = await api.put(`/api/points/${editing.id}`, form);
+      setPoints((prev) => prev.map((pt) => (pt.id === data.point.id ? data.point : pt)));
       setEditing(null);
-      showToast("更新成功，同步更新資料");
+      showToast("更新成功，已同步資料庫");
     } catch (err) {
       showToast(err?.response?.data?.error || "更新失敗");
     } finally {
@@ -192,7 +218,8 @@ export default function MapPage() {
     if (!window.confirm(`確定要刪除「${p.name}」嗎？`)) return;
     try {
       await api.delete(`/api/points/${p.id}`);
-      showToast("刪除成功");
+      setPoints((prev) => prev.filter((pt) => pt.id !== p.id));
+      showToast("刪除成功，已同步資料庫");
     } catch (err) {
       showToast(err?.response?.data?.error || "權限不足，刪除失敗");
     }
@@ -213,6 +240,7 @@ export default function MapPage() {
       const { data } = await api.post("/api/points/batch-delete", {
         ids: Array.from(selected),
       });
+      setPoints((prev) => prev.filter((pt) => !data.deleted.includes(pt.id)));
       setSelected(new Set());
       if (data.skipped?.length) {
         showToast(`已刪除 ${data.deleted.length} 筆，${data.skipped.length} 筆權限不足未刪除`);
@@ -276,7 +304,7 @@ export default function MapPage() {
           </button>
           <div className="topbar-brand">
             <h1>Web GIS 地圖系統</h1>
-            <span className="sub">React + Leaflet + Socket.io 即時協作</span>
+            <span className="sub">Thist</span>
           </div>
         </div>
 
@@ -285,7 +313,11 @@ export default function MapPage() {
             {addMode ? "取消新增" : "＋ 新增點位"}
           </button>
 
-          <select value={basemap} onChange={(e) => setBasemap(e.target.value)}>
+          <select
+            className="select-modern"
+            value={basemap}
+            onChange={(e) => setBasemap(e.target.value)}
+          >
             {Object.entries(BASEMAPS).map(([key, b]) => (
               <option key={key} value={key}>
                 {b.label}
@@ -330,8 +362,8 @@ export default function MapPage() {
 
           <div className="topbar-divider" />
 
-          <button className="btn-ghost" onClick={locateMe} title="定位到目前位置">
-            📍 定位
+          <button className="btn-ghost" onClick={locateMe} disabled={locating} title="定位到目前位置">
+            📍 {locating ? "定位中…" : "定位"}
           </button>
         </div>
       </header>
@@ -441,7 +473,6 @@ export default function MapPage() {
           center={[25.033, 121.5654]}
           zoom={13}
           scrollWheelZoom
-          whenCreated={(m) => (mapRef.current = m)}
         >
           <TileLayer url={BASEMAPS[basemap].url} attribution={BASEMAPS[basemap].attribution} />
           {showCadastral && (
