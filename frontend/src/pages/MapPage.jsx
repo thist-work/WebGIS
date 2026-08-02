@@ -391,7 +391,7 @@ export default function MapPage() {
 
           {tab === "mine" && myPoints.length > 0 && (
             <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
-              <button className="btn-ghost" onClick={exportCSV} style={{ flex: 1 }}>
+              <button className="btn-danger" onClick={exportCSV} style={{ flex: 1 }}>
                 匯出 CSV
               </button>
               <button
