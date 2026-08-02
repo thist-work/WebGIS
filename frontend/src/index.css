@@ -251,11 +251,76 @@ label {
 
 .topbar-right select {
   width: auto;
-  padding: 8px 10px;
+}
+
+/* --- Modern select/input styling (basemap dropdown + cadastral search) --- */
+.select-modern {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-color: #24303c;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M0 0l5 6 5-6z' fill='%23ffffff'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 10px 6px;
+  color: #ffffff;
+  border: 1px solid rgba(255,255,255,0.22);
+  padding: 8px 30px 8px 12px;
   font-size: 13px;
-  background: rgba(255,255,255,0.06);
-  border-color: rgba(255,255,255,0.2);
-  color: #eef2f4;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.select-modern:hover {
+  border-color: var(--brass);
+}
+.select-modern:focus {
+  outline: none;
+  border-color: var(--brass);
+  box-shadow: 0 0 0 3px rgba(201,138,59,0.28);
+}
+.select-modern:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.select-modern option {
+  background: #24303c;
+  color: #ffffff;
+}
+
+.input-modern {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 9px 11px;
+  font-size: 14px;
+  background: #f7f9fa;
+  color: var(--text);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.input-modern:focus {
+  outline: none;
+  border-color: var(--brass);
+  box-shadow: 0 0 0 3px rgba(201,138,59,0.18);
+}
+
+.cadastral-select-row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.cadastral-select-row .select-modern {
+  flex: 1;
+  min-width: 0;
+}
+/* Cadastral panel sits on a light background — override the dark sidebar
+   .search-row input treatment so the 地號 input stays legible. */
+.cadastral-panel input.input-modern {
+  background: #f7f9fa;
+  color: var(--text);
+  border-color: var(--line);
+}
+.cadastral-panel input.input-modern::placeholder {
+  color: var(--text-muted);
 }
 
 .topbar-right .btn-ghost {
