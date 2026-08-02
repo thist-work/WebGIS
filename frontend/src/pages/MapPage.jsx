@@ -42,10 +42,10 @@ const BASEMAPS = {
   },
 };
 
-// 內政部國土測繪中心「國土測繪圖資服務雲」地籍圖 WMTS（段籍圖，免申請、公開使用）
+// 內政部國土測繪中心「國土測繪圖資服務雲」地籍圖 WMTS
 const CADASTRAL_LAYER = {
   url: "https://wmts.nlsc.gov.tw/wmts/LANDSECT/default/EPSG:3857/{z}/{y}/{x}",
-  attribution: "地籍圖資來源：內政部國土測繪中心",
+  attribution: "圖資來源：國土測繪中心",
   maxZoom: 18,
 };
 
@@ -85,7 +85,7 @@ export default function MapPage() {
   const [locating, setLocating] = useState(false);
 
   // 定位到目前使用者位置並 flyTo（改用瀏覽器原生 Geolocation API，
-  // 原本透過 react-leaflet 的 whenCreated 取得地圖實例的方式在 react-leaflet v4
+  // 原：react-leaflet 的 whenCreated 取得地圖實例的方式在 react-leaflet v4
   // 已失效，導致按鈕點擊沒有反應）
   const locateMe = () => {
     if (!navigator.geolocation) {
@@ -285,12 +285,6 @@ export default function MapPage() {
     showToast(`已定位到 ${parcel.section || ""}${parcel.lot_no ? " 地號 " + parcel.lot_no : ""}`);
   };
 
-  const copyShareLink = (p) => {
-    const url = `${window.location.origin}/map?focus=${p.id}&x=${p.x}&y=${p.y}`;
-    navigator.clipboard?.writeText(url);
-    showToast("分享連結已複製");
-  };
-
   return (
     <div className="app-shell">
       <header className="topbar">
@@ -436,10 +430,7 @@ export default function MapPage() {
               {p.description && <p>{p.description}</p>}
               <div className="pc-actions">
                 <button className="btn-ghost" onClick={() => setFlyTarget({ x: p.x, y: p.y, t: Date.now() })}>
-                  導航
-                </button>
-                <button className="btn-ghost" onClick={() => copyShareLink(p)}>
-                  分享
+                  📍 定位
                 </button>
                 {canModify(p) && (
                   <>
@@ -473,6 +464,7 @@ export default function MapPage() {
           center={[25.033, 121.5654]}
           zoom={13}
           scrollWheelZoom
+          zoomControl={false}
         >
           <TileLayer url={BASEMAPS[basemap].url} attribution={BASEMAPS[basemap].attribution} />
           {showCadastral && (
