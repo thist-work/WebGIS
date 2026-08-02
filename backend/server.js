@@ -14,17 +14,43 @@ const parcelsRoutes = require("./routes/parcels");
 const app = express();
 const server = http.createServer(app);
 
-const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || "http://localhost:5173";
+// 支援以逗號分隔設定多個允許來源（例如正式站網域 + Vercel 預覽網址），
+// 新增/修改/刪除/密碼變更觸發 CORS 預檢（preflight）請求，瀏覽器可擋下
+const FRONTEND_ORIGINS = (process.env.FRONTEND_ORIGIN || "http://localhost:5173")
+  .split(",")
+  .map((s) => s.trim())
+  .filter(Boolean);
+
+function isAllowedOrigin(origin) {
+  if (!origin) return true; // 例如伺服器對伺服器、Postman 等無 Origin 的請求
+  if (FRONTEND_ORIGINS.includes(origin)) return true;
+  try {
+    // 允許同一個 Vercel 專案底下的所有預覽部署網址（*.vercel.app）
+    if (/\.vercel\.app$/.test(new URL(origin).hostname)) return true;
+  } catch {
+    return false;
+  }
+  return false;
+}
 
 const io = new Server(server, {
   cors: {
-    origin: FRONTEND_ORIGIN,
+    origin: (origin, callback) => {
+      callback(null, isAllowedOrigin(origin));
+    },
     methods: ["GET", "POST", "PUT", "DELETE"],
   },
 });
 app.set("io", io);
 
-app.use(cors({ origin: FRONTEND_ORIGIN }));
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (isAllowedOrigin(origin)) callback(null, true);
+      else callback(new Error("Not allowed by CORS"));
+    },
+  })
+);
 app.use(express.json());
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
