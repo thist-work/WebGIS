@@ -42,35 +42,6 @@ const BASEMAPS = {
   },
 };
 
-const menu = document.getElementById("basemapMenu");
-const button = document.getElementById("basemapDropdown");
-
-// Leaflet 底圖
-let currentLayer = L.tileLayer(
-  BASEMAPS.osm.url,
-  { attribution: BASEMAPS.osm.attribution }
-).addTo(map);
-
-for (const [key, item] of Object.entries(BASEMAPS)) {
-  const li = document.createElement("li");
-  li.innerHTML = `
-  <a class="dropdown-item" href="#">
-  ${item.label}
-  </a>
-  `;
-  li.onclick = () => {
-    map.removeLayer(currentLayer);
-    currentLayer = L.tileLayer(item.url, {
-      attribution: item.attribution
-    }).addTo(map);
-
-    // 更新按鈕文字
-    button.textContent = item.label;
-    button.classList.add("dropdown-toggle");
-  };
-  menu.appendChild(li);
-}
-
 // 內政部國土測繪中心「國土測繪圖資服務雲」地籍圖 WMTS（段籍圖，免申請、公開使用）
 const CADASTRAL_LAYER = {
   url: "https://wmts.nlsc.gov.tw/wmts/LANDSECT/default/EPSG:3857/{z}/{y}/{x}",
