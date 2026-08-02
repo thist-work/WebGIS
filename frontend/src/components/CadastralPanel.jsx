@@ -118,7 +118,7 @@ export default function CadastralPanel({ onLocate, onClose }) {
             className="input-modern mono"
             type="text"
             inputMode="numeric"
-            placeholder="輸入地號，例如 123 或 123-4"
+            placeholder="輸入地號，例如12或12-3"
             value={lot}
             onChange={(e) => setLot(e.target.value)}
           />
